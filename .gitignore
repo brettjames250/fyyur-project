@@ -1,0 +1,6 @@
+.idea/
+.vscode/
+env/
+error.log
+__pycache__/
+
