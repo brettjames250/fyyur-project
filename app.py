@@ -180,70 +180,60 @@ def create_venue_form():
 @app.route("/venues/create", methods=["POST"])
 def create_venue_submission():
     form = VenueForm(request.form, meta={"csrf": False})
-    body = {}
 
-    name = form.name.data.strip()
-    city = form.city.data.strip()
-    state = form.state.data.strip()
-    address = form.address.data.strip()
-    phone = form.phone.data.strip()
-    genres = request.form.getlist("genres")
-    image_link = form.image_link.data.strip()
-    facebook_link = form.facebook_link.data.strip()
-    website_link = form.website_link.data.strip()
-    seeking_talent = True if form.seeking_talent.data == True else False
-    seeking_description = form.seeking_description.data.strip()
+    try:
+        name = form.name.data.strip()
+        city = form.city.data.strip()
+        state = form.state.data.strip()
+        address = form.address.data.strip()
+        phone = form.phone.data.strip()
+        genres = request.form.getlist("genres")
+        image_link = form.image_link.data.strip()
+        facebook_link = form.facebook_link.data.strip()
+        website_link = form.website_link.data.strip()
+        seeking_talent = True if form.seeking_talent.data == True else False
+        seeking_description = form.seeking_description.data.strip()
 
-    if not form.validate():
-        flash(form.errors)
-        return redirect(url_for("create_venue_submission"))
+        venue = Venue(
+            name=name,
+            city=city,
+            state=state,
+            address=address,
+            phone=phone,
+            genres=genres,
+            image_link=image_link,
+            facebook_link=facebook_link,
+            website=website_link,
+            seeking_talent=seeking_talent,
+            seeking_description=seeking_description,
+        )
 
-    else:
-        error_in_insert = False
-
-        try:
-            venue = Venue(
-                name=name,
-                city=city,
-                state=state,
-                address=address,
-                phone=phone,
-                genres=genres,
-                image_link=image_link,
-                facebook_link=facebook_link,
-                website=website_link,
-                seeking_talent=seeking_talent,
-                seeking_description=seeking_description,
-            )
-
-            db.session.add(venue)
-            db.session.commit()
-        except Exception as e:
-            error_in_insert = True
-            print(f"Exception {e}")
-            db.session.rollback()
-        finally:
-            db.session.close()
-
-        if not error_in_insert:
-            flash("Venue successfully created.")
-            body["msg"] = "Wohoo that create was sucessfully"
-            body["success"] = True
-            return redirect(url_for("index"))
-        else:
-            body["success"] = False
-            body["msg"] = "Buhhhh we were an error "
-            abort(500)
-            flash("An error occurred")
-            print("Error at the end")
-
-        return jsonify(body)
+        db.session.add(venue)
+        db.session.commit()
+        flash("Venue created.")
+    except:
+        db.session.rollback()
+        flash("Error - Venue could not be created")
+    finally:
+        db.session.close()
+    return redirect(url_for("index"))
 
 
 @app.route("/venues/<venue_id>", methods=["DELETE"])
 def delete_venue(venue_id):
-    # TODO: Complete this endpoint for taking a venue_id, and using
-    # SQLAlchemy ORM to delete a record. Handle cases where the session commit could fail.
+
+    venue = Venue.query.get_or_404(venue_id)
+
+    try:
+        db.session.delete(venue)
+        db.session.commit()
+        flash("Venue was deleted")
+    except:
+        db.session.rollback()
+        flash("Venue was not deleted")
+    finally:
+        db.session.close
+    return redirect(url_for("index"))
 
     # BONUS CHALLENGE: Implement a button to delete a Venue on a Venue Page, have it so that
     # clicking that button delete it from the db then redirect the user to the homepage
@@ -418,51 +408,22 @@ def create_artist_submission():
 
 @app.route("/shows")
 def shows():
-    # displays list of shows at /shows
-    # TODO: replace with real venues data.
-    data = [
-        {
-            "venue_id": 1,
-            "venue_name": "The Musical Hop",
-            "artist_id": 4,
-            "artist_name": "Guns N Petals",
-            "artist_image_link": "https://images.unsplash.com/photo-1549213783-8284d0336c4f?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=300&q=80",
-            "start_time": "2019-05-21T21:30:00.000Z",
-        },
-        {
-            "venue_id": 3,
-            "venue_name": "Park Square Live Music & Coffee",
-            "artist_id": 5,
-            "artist_name": "Matt Quevedo",
-            "artist_image_link": "https://images.unsplash.com/photo-1495223153807-b916f75de8c5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=334&q=80",
-            "start_time": "2019-06-15T23:00:00.000Z",
-        },
-        {
-            "venue_id": 3,
-            "venue_name": "Park Square Live Music & Coffee",
-            "artist_id": 6,
-            "artist_name": "The Wild Sax Band",
-            "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
-            "start_time": "2035-04-01T20:00:00.000Z",
-        },
-        {
-            "venue_id": 3,
-            "venue_name": "Park Square Live Music & Coffee",
-            "artist_id": 6,
-            "artist_name": "The Wild Sax Band",
-            "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
-            "start_time": "2035-04-08T20:00:00.000Z",
-        },
-        {
-            "venue_id": 3,
-            "venue_name": "Park Square Live Music & Coffee",
-            "artist_id": 6,
-            "artist_name": "The Wild Sax Band",
-            "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
-            "start_time": "2035-04-15T20:00:00.000Z",
-        },
-    ]
-    return render_template("pages/shows.html", shows=data)
+    all_shows = Show.query.all()
+    response_data = []
+
+    for show in all_shows:
+        show_details = {
+            "venue_id": show.venue_id,
+            "venue_name": show.venue.name,
+            "artist_id": show.artist_id,
+            "artist_name": show.artist.name,
+            "artist_image_link": show.artist.image_link,
+            "start_time": str(show.start_time),
+        }
+
+        response_data.append(show_details)
+
+    return render_template("pages/shows.html", shows=response_data)
 
 
 @app.route("/shows/create")
@@ -474,11 +435,8 @@ def create_shows():
 
 @app.route("/shows/create", methods=["POST"])
 def create_show_submission():
-    # called to create new shows in the db, upon submitting new show listing form
-    # TODO: insert form data as a new Show record in the db, instead
     form = ShowForm(request.form, meta={"csrf": False})
 
-    error = False
     try:
         show = Show(
             artist_id=form.artist_id.data.strip(),
@@ -487,17 +445,14 @@ def create_show_submission():
         )
         db.session.add(show)
         db.session.commit()
+        flash("Requested show was successfully listed")
     except:
-        error = True
         db.session.rollback()
-        print(sys.exc_info())
+        flash("Error - Show could not be listed.")
     finally:
         db.session.close()
-        if error:
-            flash("An error occurred. Requested show could not be listed.")
-        else:
-            flash("Requested show was successfully listed")
-        return render_template("pages/home.html")
+
+    return render_template("pages/home.html")
 
 
 @app.errorhandler(404)
